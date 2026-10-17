@@ -60,11 +60,29 @@ static void *WAYLAND_GetSym(const char *fnname, int *pHasModule, SDL_bool requir
 {
     void *fn = NULL;
     waylanddynlib *dynlib;
+    char underscored[128];
+
+    /* First try the plain name */
     for (dynlib = waylandlibs; dynlib->libname; dynlib++) {
         if (dynlib->lib) {
             fn = SDL_LoadFunction(dynlib->lib, fnname);
             if (fn) {
                 break;
+            }
+        }
+    }
+
+    /* Fallback: try with leading underscore (needed on some old webOS) */
+    if (!fn && fnname[0] != '_' && SDL_strlen(fnname) < sizeof(underscored) - 2) {
+        underscored[0] = '_';
+        SDL_strlcpy(underscored + 1, fnname, sizeof(underscored) - 1);
+
+        for (dynlib = waylandlibs; dynlib->libname; dynlib++) {
+            if (dynlib->lib) {
+                fn = SDL_LoadFunction(dynlib->lib, underscored);
+                if (fn) {
+                    break;
+                }
             }
         }
     }
